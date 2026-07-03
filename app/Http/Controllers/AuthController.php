@@ -7,7 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
-use Illuminate\Support\Facades\Auth;
+use Exception;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -21,48 +21,53 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        try {
+            $credentials = $request->only('email', 'password');
 
-        $emailCheck = $this->authService->checkEmail($request);
+            $emailCheck = $this->authService->checkEmail($request);
 
-        if (!$emailCheck) {
+            if (!$emailCheck) {
+                return response()->json([
+                    'error' => 'Email not found.'
+                ], 401);
+            }
+
+            $passowordCheck = $this->authService->checkPassword($request);
+
+            if (!$passowordCheck) {
+                return response()->json([
+                    'error' => 'Incorrect password.'
+                ], 401);
+            }
+
+            $token = auth('api')->attempt($credentials);
+
+            if (!$token) {
+                return response()->json([
+                    'error' => 'Unauthorized'
+                ], 401);
+            }
+
+            $user = $this->authService->getUser($request);
+
             return response()->json([
-                'error' => 'Email not found.'
-            ], 401);
+                'token' => $token,
+                'user' => $user
+            ]);
+        } catch (Exception $e) {
+            return "Erro:" . $e->getMessage();
         }
-
-        $passowordCheck = $this->authService->checkPassword($request);
-
-        if (!$passowordCheck) {
-            return response()->json([
-                'error' => 'Incorrect password.'
-            ], 401);
-        }
-
-        $token = auth('api')->attempt($credentials);
-
-        if (!$token) {
-            return response()->json([
-                'error' => 'Unauthorized'
-            ], 401);
-        }
-
-        $user = $this->authService->getUser($request);
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user
-        ]);
     }
 
     public function register(StoreUserRequest $request)
     {
-        $data = $request->validated();
+        try {
 
-        $data['passowrd'] = Hash::make($data['password']);
+            $user = $this->authService->register($request);
 
-        $user = User::create($data);
-
-        return response()->json($user, 201);
+            return response()->json($user, 201);
+        } catch (Exception $e) {
+            return "Erro:" . $e->getMessage();
+        }
     }
 }

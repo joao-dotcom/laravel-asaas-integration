@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Clients;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -33,6 +34,19 @@ class AuthService
     {
         $user = User::where('email', $request->email)->first();
 
+        return $user;
+    }
+
+    public function register($request){
+        $data = $request->validated();
+
+        $data['password'] = Hash::make($data['password']);
+        $user = User::create($data);
+        $user_id = $user->id;
+        $data['user_id'] = $user_id;
+
+        Clients::create($data);
+        
         return $user;
     }
 }
