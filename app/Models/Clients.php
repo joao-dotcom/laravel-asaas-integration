@@ -21,5 +21,6 @@ class Clients extends Model
         'address',
         'addressNumber',
         'complement',
+        'customer_id',
     ];
 }
