@@ -4,19 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreUserRequest;
-use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\AuthService;
+use App\Services\MessageService;
 use Exception;
-use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
     protected $authService;
+    protected $messageService;
 
     public function __construct()
     {
         $this->authService = new AuthService();
+        $this->messageService = new MessageService();
     }
 
     public function login(Request $request)
@@ -43,9 +44,7 @@ class AuthController extends Controller
             $token = auth('api')->attempt($credentials);
 
             if (!$token) {
-                return response()->json([
-                    'error' => 'Unauthorized'
-                ], 401);
+                return $this->messageService->unauthorized();
             }
 
             $user = $this->authService->getUser($request);
@@ -62,7 +61,6 @@ class AuthController extends Controller
     public function register(StoreUserRequest $request)
     {
         try {
-
             $user = $this->authService->register($request);
 
             return response()->json($user, 201);
